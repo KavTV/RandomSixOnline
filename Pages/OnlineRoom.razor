@@ -1,0 +1,107 @@
+﻿@page "/"
+@page "/{groupId}"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
+<!--HTML-->
+<h3>OnlineRoom</h3>
+<label>INFO: "@errorLabel"</label>
+<div class="form-group">
+    @if (string.IsNullOrWhiteSpace(groupId))
+    {
+        <label>Create or join a room.</label>
+        <button @onclick="CreateRoom"> Create</button>
+        <label>Join</label>
+        <input id="groupPut" @bind="groupInput" />
+        <button @onclick="JoinRoom">Join room</button>
+    }
+    else
+    {
+        <label>You are in room: "@groupId"</label>
+    }
+</div>
+
+<div class="form-group">
+    <label>
+        Message:
+        <input @bind="player.CurrentCharacter" size="50" />
+    </label>
+</div>
+<button @onclick="SendAPlayer" disabled="@(!IsConnected)">Send</button>
+
+<ul id="playerList">
+    @foreach (var player in players)
+    {
+        <li>@player.CurrentCharacter</li>
+    }
+</ul>
+
+<!-- CODE -->
+@code {
+    private HubConnection hubConnection;
+    private List<string> messages = new List<string>();
+    private string groupInput = ""; //This binds with input
+    [Parameter]
+    public string groupId { get; set; } //this is where the group gets stored.
+    private string errorLabel = "";
+    private bool groupJoined = false;
+    private Player player = new Player();
+    private List<Player> players = new List<Player>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //Maybe set to communicationhub
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
+            .Build();
+
+        hubConnection.On<Player>("GetPlayer", player =>
+        {
+            errorLabel = "Spiller tilføjet";
+            players.Add(player);
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+
+        //If group parameter is set, then join group
+        if (!string.IsNullOrWhiteSpace(groupId) && groupJoined != true)
+        {
+            //set this or it will be overwritten in joinroom
+            groupInput = groupId;
+            await JoinRoom();
+        }
+    }
+    
+
+    async Task CreateRoom()
+    {
+        Random rnd = new Random();
+        string group = "";
+        for (int i = 0; i < 7; i++)
+        {
+            group += rnd.Next(1, 9);
+        }
+        groupId = group;
+        await hubConnection.SendAsync("JoinRoom", group);
+    }
+
+    async Task JoinRoom()
+    {
+        errorLabel = "Rum tilsluttet";
+        groupId = groupInput;
+        groupJoined = true;
+        await hubConnection.SendAsync("JoinRoom", groupId);
+    }
+
+    async Task SendAPlayer() =>
+    await hubConnection.SendAsync("SendPlayer", player, groupId);
+
+    public bool IsConnected =>
+    hubConnection.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        await hubConnection.DisposeAsync();
+    }
+}
