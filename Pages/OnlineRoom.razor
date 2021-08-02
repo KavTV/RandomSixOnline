@@ -7,12 +7,14 @@
 <h3>OnlineRoom</h3>
 <label>INFO: "@errorLabel"</label>
 <div class="form-group">
+
     @if (string.IsNullOrWhiteSpace(groupId))
     {
+        <input id="UsernameInput" @bind="player.Username" placeholder="Username" />
         <label>Create or join a room.</label>
         <button @onclick="CreateRoom"> Create</button>
         <label>Join</label>
-        <input id="groupPut" @bind="groupInput" />
+        <input id="groupPut" @bind="groupInput" placeholder="GroupID" />
         <button @onclick="JoinRoom">Join room</button>
     }
     else
@@ -22,24 +24,25 @@
 </div>
 
 <div class="form-group">
-    <label>
-        Message:
-        <input @bind="player.CurrentCharacter" size="50" />
-    </label>
+    <button @onclick="RandomOperatorAndSend"> Random Operator</button>
 </div>
-<button @onclick="SendAPlayer" disabled="@(!IsConnected)">Send</button>
+<button disabled="@(!IsConnected)">Send</button>
 
-<ul id="playerList">
+<div style="border: solid">
     @foreach (var player in players)
     {
-        <li>@player.CurrentCharacter</li>
+    <div class="row">
+        <img class="" src="Images/@(player.CurrentOperator).webp" style="width: 100px"/>
+        <p class="col">@player.Username: @player.CurrentOperator</p>
+
+    </div>
     }
-</ul>
+</div>
 
 <!-- CODE -->
 @code {
     private HubConnection hubConnection;
-    private List<string> messages = new List<string>();
+    //private List<string> messages = new List<string>();
     private string groupInput = ""; //This binds with input
     [Parameter]
     public string groupId { get; set; } //this is where the group gets stored.
@@ -58,7 +61,17 @@
         hubConnection.On<Player>("GetPlayer", player =>
         {
             errorLabel = "Spiller tilføjet";
-            players.Add(player);
+
+        //Find if user exists already, if exists then replace with new player object
+        int index = players.FindIndex(p => p.Username == player.Username);
+            if (index != -1)
+            {
+                players[index] = player;
+            }
+            else
+            {
+                players.Add(player);
+            }
             StateHasChanged();
         });
 
@@ -72,7 +85,7 @@
             await JoinRoom();
         }
     }
-    
+
 
     async Task CreateRoom()
     {
@@ -96,6 +109,12 @@
 
     async Task SendAPlayer() =>
     await hubConnection.SendAsync("SendPlayer", player, groupId);
+
+    public async void RandomOperatorAndSend()
+    {
+        player.GetRandomOperator();
+        await SendAPlayer();
+    }
 
     public bool IsConnected =>
     hubConnection.State == HubConnectionState.Connected;
