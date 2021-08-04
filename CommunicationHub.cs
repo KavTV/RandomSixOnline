@@ -11,30 +11,52 @@ namespace RandomSixOnline
 
         public async Task SendPlayer(Player player, string groupName)
         {
+            player.ConnectionId = this.Context.ConnectionId;
             await Clients.Group(groupName).SendAsync("GetPlayer", player);
         }
-        public Task JoinRoom(string roomName)
+        public async Task JoinRoom(string roomName)
         {
-            return Groups.AddToGroupAsync(this.Context.ConnectionId, roomName);
-            //Leave a message or add html with player joined.
+            ClientGroups.groupName = roomName;
+            await Groups.AddToGroupAsync(this.Context.ConnectionId, roomName);
         }
-        public override Task OnConnectedAsync()
+        public async Task JoinRoomAndSendPlayer(string roomName, Player player)
         {
-            return base.OnConnectedAsync();
+            //Save the groupid
+            ClientGroups.groupName = roomName;
+            //Join group
+            await Groups.AddToGroupAsync(this.Context.ConnectionId, roomName);
+            
+            //Save the connectionId
+            player.ConnectionId = this.Context.ConnectionId;
+            //Tells other players that you joined.
+            await Clients.Group(roomName).SendAsync("PlayerConnected", player);
         }
-        public override Task OnDisconnectedAsync(Exception exception)
+        public async override Task OnConnectedAsync()
         {
-            return base.OnDisconnectedAsync(exception);
+            await base.OnConnectedAsync();
+        }
+        public async override Task OnDisconnectedAsync(Exception exception)
+        {
+             await PlayerDisconnected();
         }
 
-        public Task LeaveRoom(string roomName)
+        public async Task LeaveRoom(string roomName)
         {
-            return Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
+            ClientGroups.groupName = "";
+            await PlayerDisconnected();
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
         }
-
-        public Task SendMesssageToGroup(string group, string message)
+        private async Task PlayerDisconnected()
         {
-            return Clients.Group(group).SendAsync(message);
+            await Clients.Group(ClientGroups.groupName).SendAsync("PlayerDisconnected", this.Context.ConnectionId);
+        }
+        public async Task SendMesssageToGroup(string group, string message)
+        {
+            await Clients.Group(group).SendAsync(message);
+        }
+        public async Task SendMessageToConnectionId(string connectionid, string message)
+        {
+            await Clients.Client(connectionid).SendAsync(message);
         }
     }
 }

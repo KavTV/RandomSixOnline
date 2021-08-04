@@ -84,7 +84,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 #nullable disable
     [Microsoft.AspNetCore.Components.RouteAttribute("/")]
     [Microsoft.AspNetCore.Components.RouteAttribute("/{groupId}")]
-    public partial class OnlineRoom : Microsoft.AspNetCore.Components.ComponentBase, IAsyncDisposable
+    public partial class OnlineRoom : Microsoft.AspNetCore.Components.ComponentBase, IAsyncDisposable, IDisposable
     {
         #pragma warning disable 1998
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder)
@@ -92,7 +92,7 @@ using Microsoft.AspNetCore.SignalR.Client;
         }
         #pragma warning restore 1998
 #nullable restore
-#line 43 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Pages\OnlineRoom.razor"
+#line 45 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Pages\OnlineRoom.razor"
        
     private HubConnection hubConnection;
     //private List<string> messages = new List<string>();
@@ -111,12 +111,13 @@ using Microsoft.AspNetCore.SignalR.Client;
             .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
             .Build();
 
+        //When a player joins
         hubConnection.On<Player>("GetPlayer", player =>
         {
             errorLabel = "Spiller tilføjet";
 
-        //Find if user exists already, if exists then replace with new player object
-        int index = players.FindIndex(p => p.Username == player.Username);
+            //Find if user exists already, if exists then replace with new player object
+            int index = players.FindIndex(p => p.Username == player.Username);
             if (index != -1)
             {
                 players[index] = player;
@@ -125,6 +126,31 @@ using Microsoft.AspNetCore.SignalR.Client;
             {
                 players.Add(player);
             }
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("PlayerDisconnected", player =>
+        {
+            errorLabel = "Player Disconnected";
+
+            //Find if user exists already, if exists then replace with new player object
+            int index = players.FindIndex(p => p.ConnectionId == player);
+            if (index != -1)
+            {
+                players.Remove(players[index]);
+            }
+
+            StateHasChanged();
+        });
+
+        hubConnection.On<Player>("PlayerConnected", player =>
+        {
+            errorLabel = "Player Connected";
+
+            player.GetRandomOperator();
+
+            players.Add(player);
+
             StateHasChanged();
         });
 
@@ -149,7 +175,7 @@ using Microsoft.AspNetCore.SignalR.Client;
             group += rnd.Next(1, 9);
         }
         groupId = group;
-        await hubConnection.SendAsync("JoinRoom", group);
+        await hubConnection.SendAsync("JoinRoomAndSendPlayer", group, player);
     }
 
     async Task JoinRoom()
@@ -157,7 +183,7 @@ using Microsoft.AspNetCore.SignalR.Client;
         errorLabel = "Rum tilsluttet";
         groupId = groupInput;
         groupJoined = true;
-        await hubConnection.SendAsync("JoinRoom", groupId);
+        await hubConnection.SendAsync("JoinRoomAndSendPlayer", groupId, player);
     }
 
     async Task SendAPlayer() =>
@@ -175,6 +201,11 @@ using Microsoft.AspNetCore.SignalR.Client;
     public async ValueTask DisposeAsync()
     {
         await hubConnection.DisposeAsync();
+    }
+
+    public void Dispose()
+    {
+        hubConnection.DisposeAsync();
     }
 
 #line default

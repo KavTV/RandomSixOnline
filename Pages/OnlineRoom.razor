@@ -3,7 +3,9 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
+@implements IDisposable
 <!--HTML-->
+
 <h3>OnlineRoom</h3>
 <label>INFO: "@errorLabel"</label>
 <div class="form-group">
@@ -12,10 +14,10 @@
     {
         <input id="UsernameInput" @bind="player.Username" placeholder="Username" />
         <label>Create or join a room.</label>
-        <button @onclick="CreateRoom"> Create</button>
+        <button class="btn btn-primary" @onclick="CreateRoom"> Create</button>
         <label>Join</label>
         <input id="groupPut" @bind="groupInput" placeholder="GroupID" />
-        <button @onclick="JoinRoom">Join room</button>
+        <button class="btn btn-primary" @onclick="JoinRoom">Join room</button>
     }
     else
     {
@@ -28,17 +30,17 @@
 </div>
 <button disabled="@(!IsConnected)">Send</button>
 
-<div style="border: solid">
+<div class="row">
     @foreach (var player in players)
     {
-    <div class="row">
-        <img class="" src="Images/@(player.CurrentOperator).webp" style="width: 100px"/>
-        <p class="col">@player.Username: @player.CurrentOperator</p>
+        <div class="col-md-6">
+            <img class="" src="Images/@(player.CurrentOperator).webp" style="width: 100px" />
+            <h5 class="d-flex align-items-center">@player.Username: @player.CurrentOperator</h5>
 
-    </div>
+        </div>
     }
-</div>
 
+</div>
 <!-- CODE -->
 @code {
     private HubConnection hubConnection;
@@ -58,12 +60,13 @@
             .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
             .Build();
 
+        //When a player joins
         hubConnection.On<Player>("GetPlayer", player =>
         {
             errorLabel = "Spiller tilføjet";
 
-        //Find if user exists already, if exists then replace with new player object
-        int index = players.FindIndex(p => p.Username == player.Username);
+            //Find if user exists already, if exists then replace with new player object
+            int index = players.FindIndex(p => p.Username == player.Username);
             if (index != -1)
             {
                 players[index] = player;
@@ -72,6 +75,31 @@
             {
                 players.Add(player);
             }
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("PlayerDisconnected", player =>
+        {
+            errorLabel = "Player Disconnected";
+
+            //Find if user exists already, if exists then replace with new player object
+            int index = players.FindIndex(p => p.ConnectionId == player);
+            if (index != -1)
+            {
+                players.Remove(players[index]);
+            }
+
+            StateHasChanged();
+        });
+
+        hubConnection.On<Player>("PlayerConnected", player =>
+        {
+            errorLabel = "Player Connected";
+
+            player.GetRandomOperator();
+
+            players.Add(player);
+
             StateHasChanged();
         });
 
@@ -96,7 +124,7 @@
             group += rnd.Next(1, 9);
         }
         groupId = group;
-        await hubConnection.SendAsync("JoinRoom", group);
+        await hubConnection.SendAsync("JoinRoomAndSendPlayer", group, player);
     }
 
     async Task JoinRoom()
@@ -104,7 +132,7 @@
         errorLabel = "Rum tilsluttet";
         groupId = groupInput;
         groupJoined = true;
-        await hubConnection.SendAsync("JoinRoom", groupId);
+        await hubConnection.SendAsync("JoinRoomAndSendPlayer", groupId, player);
     }
 
     async Task SendAPlayer() =>
@@ -122,5 +150,10 @@
     public async ValueTask DisposeAsync()
     {
         await hubConnection.DisposeAsync();
+    }
+
+    public void Dispose()
+    {
+        hubConnection.DisposeAsync();
     }
 }
