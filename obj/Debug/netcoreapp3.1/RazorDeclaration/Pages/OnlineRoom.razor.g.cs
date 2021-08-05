@@ -92,7 +92,7 @@ using Microsoft.AspNetCore.SignalR.Client;
         }
         #pragma warning restore 1998
 #nullable restore
-#line 45 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Pages\OnlineRoom.razor"
+#line 44 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Pages\OnlineRoom.razor"
        
     private HubConnection hubConnection;
     //private List<string> messages = new List<string>();
@@ -106,10 +106,13 @@ using Microsoft.AspNetCore.SignalR.Client;
 
     protected override async Task OnInitializedAsync()
     {
+        //Roll random operator
+        player.GetRandomOperator();
+        //player.ConnectionId = hubConnection.ConnectionId;
         //Maybe set to communicationhub
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
-            .Build();
+        .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
+        .Build();
 
         //When a player joins
         hubConnection.On<Player>("GetPlayer", player =>
@@ -117,7 +120,7 @@ using Microsoft.AspNetCore.SignalR.Client;
             errorLabel = "Spiller tilføjet";
 
             //Find if user exists already, if exists then replace with new player object
-            int index = players.FindIndex(p => p.Username == player.Username);
+            int index = players.FindIndex(p => p.ConnectionId == player.ConnectionId);
             if (index != -1)
             {
                 players[index] = player;
@@ -143,13 +146,22 @@ using Microsoft.AspNetCore.SignalR.Client;
             StateHasChanged();
         });
 
-        hubConnection.On<Player>("PlayerConnected", player =>
+        hubConnection.On<Player>("PlayerConnected", async receivedPlayer =>
         {
-            errorLabel = "Player Connected";
+            errorLabel = receivedPlayer.Username;
 
-            player.GetRandomOperator();
+            players.Add(receivedPlayer);
 
-            players.Add(player);
+            //await hubConnection.SendAsync("GetOtherPlayers", groupId, this.player);
+            await SendAPlayer();
+
+            StateHasChanged();
+        });
+        hubConnection.On<Player>("SendPlayer", async nothing =>
+        {
+            errorLabel = nothing.Username;
+
+            await SendAPlayer();
 
             StateHasChanged();
         });
@@ -176,6 +188,7 @@ using Microsoft.AspNetCore.SignalR.Client;
         }
         groupId = group;
         await hubConnection.SendAsync("JoinRoomAndSendPlayer", group, player);
+        //await SendAPlayer();
     }
 
     async Task JoinRoom()
@@ -187,13 +200,14 @@ using Microsoft.AspNetCore.SignalR.Client;
     }
 
     async Task SendAPlayer() =>
-    await hubConnection.SendAsync("SendPlayer", player, groupId);
+    await hubConnection.SendAsync("SendPlayer", this.player, this.groupId);
 
     public async void RandomOperatorAndSend()
     {
         player.GetRandomOperator();
         await SendAPlayer();
     }
+
 
     public bool IsConnected =>
     hubConnection.State == HubConnectionState.Connected;

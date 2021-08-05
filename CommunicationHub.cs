@@ -14,10 +14,11 @@ namespace RandomSixOnline
             player.ConnectionId = this.Context.ConnectionId;
             await Clients.Group(groupName).SendAsync("GetPlayer", player);
         }
-        public async Task JoinRoom(string roomName)
+        public async Task CreateRoom(string roomName)
         {
             ClientGroups.groupName = roomName;
             await Groups.AddToGroupAsync(this.Context.ConnectionId, roomName);
+
         }
         public async Task JoinRoomAndSendPlayer(string roomName, Player player)
         {
@@ -27,9 +28,15 @@ namespace RandomSixOnline
             await Groups.AddToGroupAsync(this.Context.ConnectionId, roomName);
             
             //Save the connectionId
-            player.ConnectionId = this.Context.ConnectionId;
+            player.ConnectionId = this.Context.ConnectionId; 
+
             //Tells other players that you joined.
-            await Clients.Group(roomName).SendAsync("PlayerConnected", player);
+            await Clients.OthersInGroup(roomName).SendAsync("PlayerConnected", player);
+            await SendPlayer(player, roomName);
+        }
+        public async Task GetOtherPlayers(Player player, string groupName)
+        {
+            await Clients.OthersInGroup(groupName).SendAsync("GetPlayer", player);
         }
         public async override Task OnConnectedAsync()
         {

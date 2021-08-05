@@ -295,4 +295,3 @@ C:\Users\kasp609g\Documents\Github\RandomSixOnline\obj\Debug\netcoreapp3.1\Rando
 C:\Users\kasp609g\Documents\Github\RandomSixOnline\obj\Debug\netcoreapp3.1\RandomSixOnline.pdb
 C:\Users\kasp609g\Documents\Github\RandomSixOnline\obj\Debug\netcoreapp3.1\RandomSixOnline.genruntimeconfig.cache
 C:\Users\kasp609g\Documents\Github\RandomSixOnline\bin\Debug\netcoreapp3.1\Microsoft.VisualStudio.Web.BrowserLink.dll
-C:\Users\kasp609g\Documents\Github\RandomSixOnline\obj\Debug\netcoreapp3.1\RandomSixOnline.csproj.AssemblyReference.cache

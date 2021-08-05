@@ -83,7 +83,7 @@ using RandomSixOnline.Shared;
         }
         #pragma warning restore 1998
 #nullable restore
-#line 38 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Shared\NavMenu.razor"
+#line 29 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Shared\NavMenu.razor"
        
     private bool collapseNavMenu = true;
 

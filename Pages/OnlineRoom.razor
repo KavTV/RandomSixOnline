@@ -26,9 +26,8 @@
 </div>
 
 <div class="form-group">
-    <button @onclick="RandomOperatorAndSend"> Random Operator</button>
+    <button @onclick="RandomOperatorAndSend" disabled="@(!IsConnected)"> Random Operator</button>
 </div>
-<button disabled="@(!IsConnected)">Send</button>
 
 <div class="row">
     @foreach (var player in players)
@@ -55,10 +54,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        //Roll random operator
+        player.GetRandomOperator();
+        //player.ConnectionId = hubConnection.ConnectionId;
         //Maybe set to communicationhub
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
-            .Build();
+        .WithUrl(NavigationManager.ToAbsoluteUri("/onlineroom"))
+        .Build();
 
         //When a player joins
         hubConnection.On<Player>("GetPlayer", player =>
@@ -66,7 +68,7 @@
             errorLabel = "Spiller tilføjet";
 
             //Find if user exists already, if exists then replace with new player object
-            int index = players.FindIndex(p => p.Username == player.Username);
+            int index = players.FindIndex(p => p.ConnectionId == player.ConnectionId);
             if (index != -1)
             {
                 players[index] = player;
@@ -92,13 +94,22 @@
             StateHasChanged();
         });
 
-        hubConnection.On<Player>("PlayerConnected", player =>
+        hubConnection.On<Player>("PlayerConnected", async receivedPlayer =>
         {
-            errorLabel = "Player Connected";
+            errorLabel = receivedPlayer.Username;
 
-            player.GetRandomOperator();
+            players.Add(receivedPlayer);
 
-            players.Add(player);
+            //await hubConnection.SendAsync("GetOtherPlayers", groupId, this.player);
+            await SendAPlayer();
+
+            StateHasChanged();
+        });
+        hubConnection.On<Player>("SendPlayer", async nothing =>
+        {
+            errorLabel = nothing.Username;
+
+            await SendAPlayer();
 
             StateHasChanged();
         });
@@ -125,6 +136,7 @@
         }
         groupId = group;
         await hubConnection.SendAsync("JoinRoomAndSendPlayer", group, player);
+        //await SendAPlayer();
     }
 
     async Task JoinRoom()
@@ -136,13 +148,14 @@
     }
 
     async Task SendAPlayer() =>
-    await hubConnection.SendAsync("SendPlayer", player, groupId);
+    await hubConnection.SendAsync("SendPlayer", this.player, this.groupId);
 
     public async void RandomOperatorAndSend()
     {
         player.GetRandomOperator();
         await SendAPlayer();
     }
+
 
     public bool IsConnected =>
     hubConnection.State == HubConnectionState.Connected;
