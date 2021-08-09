@@ -12,12 +12,18 @@
 
     @if (string.IsNullOrWhiteSpace(groupId))
     {
-        <input id="UsernameInput" @bind="player.Username" placeholder="Username" />
-        <label>Create or join a room.</label>
-        <button class="btn btn-primary" @onclick="CreateRoom"> Create</button>
-        <label>Join</label>
-        <input id="groupPut" @bind="groupInput" placeholder="GroupID" />
-        <button class="btn btn-primary" @onclick="JoinRoom">Join room</button>
+        <div class="row">
+            <input class="form-control field" id="UsernameInput" @bind="player.Username" placeholder="Username" />
+        </div>
+        <div class="row">
+            <label class="col field">Create or join a room:</label>
+            <button class="col btn btn-primary" @onclick="CreateRoom"> Create</button>
+        </div>
+        <div class="row">
+            <label class="col">Join</label>
+            <input class="form-control field" id="groupPut" @bind="groupInput" placeholder="GroupID" />
+            <button class="col btn btn-primary" @onclick="JoinRoom">Join room</button>
+        </div>
     }
     else
     {
@@ -26,7 +32,7 @@
 </div>
 
 <div class="form-group">
-    <button @onclick="RandomOperatorAndSend" disabled="@(!IsConnected)"> Random Operator</button>
+    <button class="btn btn-primary" @onclick="RandomOperatorAndSend" disabled="@(!IsConnected)"> Random Operator</button>
 </div>
 
 <div class="row">
@@ -67,8 +73,8 @@
         {
             errorLabel = "Spiller tilføjet";
 
-            //Find if user exists already, if exists then replace with new player object
-            int index = players.FindIndex(p => p.ConnectionId == player.ConnectionId);
+        //Find if user exists already, if exists then replace with new player object
+        int index = players.FindIndex(p => p.ConnectionId == player.ConnectionId);
             if (index != -1)
             {
                 players[index] = player;
@@ -84,8 +90,8 @@
         {
             errorLabel = "Player Disconnected";
 
-            //Find if user exists already, if exists then replace with new player object
-            int index = players.FindIndex(p => p.ConnectionId == player);
+        //Find if user exists already, if exists then replace with new player object
+        int index = players.FindIndex(p => p.ConnectionId == player);
             if (index != -1)
             {
                 players.Remove(players[index]);
@@ -100,8 +106,8 @@
 
             players.Add(receivedPlayer);
 
-            //await hubConnection.SendAsync("GetOtherPlayers", groupId, this.player);
-            await SendAPlayer();
+        //await hubConnection.SendAsync("GetOtherPlayers", groupId, this.player);
+        await SendAPlayer();
 
             StateHasChanged();
         });

@@ -92,7 +92,7 @@ using Microsoft.AspNetCore.SignalR.Client;
         }
         #pragma warning restore 1998
 #nullable restore
-#line 44 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Pages\OnlineRoom.razor"
+#line 50 "C:\Users\kasp609g\Documents\Github\RandomSixOnline\Pages\OnlineRoom.razor"
        
     private HubConnection hubConnection;
     //private List<string> messages = new List<string>();
@@ -119,8 +119,8 @@ using Microsoft.AspNetCore.SignalR.Client;
         {
             errorLabel = "Spiller tilføjet";
 
-            //Find if user exists already, if exists then replace with new player object
-            int index = players.FindIndex(p => p.ConnectionId == player.ConnectionId);
+        //Find if user exists already, if exists then replace with new player object
+        int index = players.FindIndex(p => p.ConnectionId == player.ConnectionId);
             if (index != -1)
             {
                 players[index] = player;
@@ -136,8 +136,8 @@ using Microsoft.AspNetCore.SignalR.Client;
         {
             errorLabel = "Player Disconnected";
 
-            //Find if user exists already, if exists then replace with new player object
-            int index = players.FindIndex(p => p.ConnectionId == player);
+        //Find if user exists already, if exists then replace with new player object
+        int index = players.FindIndex(p => p.ConnectionId == player);
             if (index != -1)
             {
                 players.Remove(players[index]);
@@ -152,8 +152,8 @@ using Microsoft.AspNetCore.SignalR.Client;
 
             players.Add(receivedPlayer);
 
-            //await hubConnection.SendAsync("GetOtherPlayers", groupId, this.player);
-            await SendAPlayer();
+        //await hubConnection.SendAsync("GetOtherPlayers", groupId, this.player);
+        await SendAPlayer();
 
             StateHasChanged();
         });
